@@ -24,7 +24,7 @@
     "@repo/seo": "workspace:*",
     "@repo/tailwind-config": "workspace:*",
     "@repo/webhooks": "workspace:*",
-    "@sentry/nextjs": "^8.43.0",
+    "@sentry/nextjs": "^8.47.0",
     "fuse.js": "^7.0.0",
     "import-in-the-middle": "^1.11.3",
     "lucide-react": "^0.468.0",
