@@ -11,6 +11,7 @@ neonConfig.webSocketConstructor = ws;
 const pool = new Pool({ connectionString: env.DATABASE_URL });
 const adapter = new PrismaNeon(pool);
 
+// @ts-ignore
 export const database = new PrismaClient({ adapter });
 
 export * from '@prisma/client';

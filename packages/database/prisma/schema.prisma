@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["driverAdapters"]
@@ -12,10 +9,145 @@ datasource db {
   relationMode = "prisma"
 }
 
-// This is a stub model.
-// Delete it and add your own Prisma models.
-model Page {
-  id    Int     @id @default(autoincrement())
-  email String  @unique
-  name  String?
+model User {
+  id                   String             @id @default(cuid())
+  firstName            String
+  lastName             String
+  username             String             @unique
+  email                String             @unique
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  phoneNumber          String?
+  avatarUrl            String?
+  isSuperUser          Boolean            @default(false) // Identifies superusers
+  activeOrganizationId String? // The ID of the active organization (optional)
+  activeOrganization   Organization?      @relation(fields: [activeOrganizationId], references: [id])
+  organizationUsers    OrganizationUser[] // Many-to-many relationship via OrganizationUser
+
+  @@index([activeOrganizationId])
+}
+
+model Organization {
+  id                String              @id @default(cuid())
+  name              String
+  organizationUsers OrganizationUser[] // Many-to-many relationship via OrganizationUser
+  applications      MentorApplication[] // Mentor applications within the organization
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  User User[]
+}
+
+model Role {
+  id                String             @id @default(cuid())
+  name              String             @unique // Human-readable name of the role (e.g., 'Admin')
+  key               String             @unique // Enum-like unique key for roles (e.g., 'ADMIN', 'MENTOR')
+  isGlobal          Boolean            @default(false) // Indicates if the role is global
+  permissions       RolePermission[] // Many-to-many relationship with permissions
+  organizationUsers OrganizationUser[] // Links roles to users in organizations
+}
+
+model Permission {
+  id     String           @id @default(cuid())
+  action String           @unique // e.g., 'read', 'write', 'delete', 'approveApplications'
+  roles  RolePermission[] // Many-to-many relationship with roles
+}
+
+model RolePermission {
+  id           String @id @default(cuid())
+  roleId       String
+  permissionId String
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId]) // Ensures no duplicate role-permission combinations
+  @@index([permissionId])
+}
+
+model OrganizationUser {
+  id             String       @id @default(cuid())
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String
+  role           Role         @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  roleId         String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String // Ties the role to a specific organization
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  Mentor         Mentor[]
+  Partner        Partner[]
+  Admin          Admin[]
+
+  @@unique([userId, roleId, organizationId]) // Ensures no duplicate roles for the same user in the same organization
+  @@index([organizationId])
+  @@index([roleId])
+}
+
+model Mentor {
+  id                 String              @id @default(cuid())
+  organizationUser   OrganizationUser    @relation(fields: [organizationUserId], references: [id])
+  organizationUserId String              @unique
+  availability       String // Availability for mentoring sessions
+  applications       MentorApplication[] // Relation to applications
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+}
+
+model MentorApplication {
+  id             String            @id @default(cuid())
+  organization   Organization      @relation(fields: [organizationId], references: [id])
+  organizationId String
+  mentor         Mentor            @relation(fields: [mentorId], references: [id])
+  mentorId       String
+  referenceForms ReferenceForm[]
+  status         ApplicationStatus @default(PENDING)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  @@index([organizationId])
+  @@index([mentorId])
+}
+
+model ReferenceForm {
+  id                  String             @id @default(cuid())
+  mentorApplication   MentorApplication? @relation(fields: [mentorApplicationId], references: [id])
+  mentorApplicationId String?
+  referenceName       String // Name of the reference
+  referenceEmail      String // Email of the reference
+  relationship        String? // Relationship to the applicant (e.g., "Supervisor")
+  feedback            String // Feedback or endorsement text
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  @@index([mentorApplicationId])
+}
+
+model Partner {
+  id                 String           @id @default(cuid())
+  organizationUser   OrganizationUser @relation(fields: [organizationUserId], references: [id])
+  organizationUserId String           @unique
+  status             PartnerStatus    @default(RESIDENT) // Unique property for partners
+  releaseDate        DateTime? // Optional field for released partners
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+}
+
+model Admin {
+  id                 String           @id @default(cuid())
+  organizationUser   OrganizationUser @relation(fields: [organizationUserId], references: [id])
+  organizationUserId String           @unique
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+}
+
+enum PartnerStatus {
+  RESIDENT
+  RELEASED
+}
+
+enum ApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }

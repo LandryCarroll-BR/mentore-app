@@ -1,18 +1,21 @@
-import { auth } from '@repo/auth/server';
-import { database } from '@repo/database';
+import { AvatarStack } from '@/components/avatar-stack';
+import { Cursors } from '@/components/cursors';
+import { Header } from '@/components/header';
+import {
+  getActiveOrganizationId,
+  getUserOrganizations,
+} from '@/data/queries/organizations.get';
+import { currentUser } from '@repo/auth/server';
 import { env } from '@repo/env';
 import type { Metadata } from 'next';
 import dynamic from 'next/dynamic';
-import { notFound } from 'next/navigation';
-import { AvatarStack } from './components/avatar-stack';
-import { Cursors } from './components/cursors';
-import { Header } from './components/header';
+import { redirect } from 'next/navigation';
 
 const title = 'Acme Inc';
 const description = 'My application.';
 
 const CollaborationProvider = dynamic(() =>
-  import('./components/collaboration-provider').then(
+  import('../../components/collaboration-provider').then(
     (mod) => mod.CollaborationProvider
   )
 );
@@ -23,18 +26,19 @@ export const metadata: Metadata = {
 };
 
 const App = async () => {
-  const pages = await database.page.findMany();
-  const { orgId } = await auth();
+  const user = await currentUser();
+  const organizations = await getUserOrganizations(user?.id);
+  const activeOrganizationId = await getActiveOrganizationId();
 
-  if (!orgId) {
-    notFound();
+  if (!organizations.length) {
+    redirect('/onboarding/create-organization');
   }
 
   return (
     <>
-      <Header pages={['Building Your Application']} page="Data Fetching">
-        {env.LIVEBLOCKS_SECRET && (
-          <CollaborationProvider orgId={orgId}>
+      <Header page="Dashboard">
+        {env.LIVEBLOCKS_SECRET && activeOrganizationId && (
+          <CollaborationProvider orgId={activeOrganizationId}>
             <AvatarStack />
             <Cursors />
           </CollaborationProvider>
@@ -42,13 +46,11 @@ const App = async () => {
       </Header>
       <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
         <div className="grid auto-rows-min gap-4 md:grid-cols-3">
-          {pages.map((page) => (
-            <div key={page.id} className="aspect-video rounded-xl bg-muted/50">
-              {page.name}
-            </div>
-          ))}
+          Welcome to Mentore
         </div>
-        <div className="min-h-[100vh] flex-1 rounded-xl bg-muted/50 md:min-h-min" />
+        <div className="min-h-[100vh] flex-1 rounded-xl bg-muted/50 md:min-h-min">
+          {/* <MentorApplicationList /> */}
+        </div>
       </div>
     </>
   );

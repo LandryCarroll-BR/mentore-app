@@ -1,27 +1,51 @@
 import { analytics } from '@repo/analytics/posthog/server';
-import type {
-  DeletedObjectJSON,
-  OrganizationJSON,
-  OrganizationMembershipJSON,
-  UserJSON,
-  WebhookEvent,
+import {
+  type DeletedObjectJSON,
+  type UserJSON,
+  type WebhookEvent,
+  clerkClient,
 } from '@repo/auth/server';
+import { database } from '@repo/database';
 import { env } from '@repo/env';
 import { log } from '@repo/observability/log';
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { Webhook } from 'svix';
 
-const handleUserCreated = (data: UserJSON) => {
+const handleUserCreated = async (data: UserJSON) => {
+  const { id, email, firstName, lastName, createdAt, avatarUrl, phoneNumber } =
+    getUserDataFromClerk(data);
+
+  const clerk = await clerkClient();
+
+  await clerk.users.updateUser(id, {
+    publicMetadata: {
+      role: 'user',
+    },
+  });
+
+  await database.user.create({
+    data: {
+      id,
+      email,
+      firstName,
+      lastName,
+      createdAt,
+      username: email,
+      avatarUrl,
+      phoneNumber,
+    },
+  });
+
   analytics.identify({
     distinctId: data.id,
     properties: {
-      email: data.email_addresses.at(0)?.email_address,
-      firstName: data.first_name,
-      lastName: data.last_name,
-      createdAt: new Date(data.created_at),
-      avatar: data.image_url,
-      phoneNumber: data.phone_numbers.at(0)?.phone_number,
+      email,
+      firstName,
+      lastName,
+      createdAt,
+      avatarUrl,
+      phoneNumber,
     },
   });
 
@@ -33,7 +57,21 @@ const handleUserCreated = (data: UserJSON) => {
   return new Response('User created', { status: 201 });
 };
 
-const handleUserUpdated = (data: UserJSON) => {
+const handleUserUpdated = async (data: UserJSON) => {
+  const { id, firstName, lastName } = getUserDataFromClerk(data);
+
+  if (id) {
+    await database.user.update({
+      where: {
+        id,
+      },
+      data: {
+        firstName,
+        lastName,
+      },
+    });
+  }
+
   analytics.identify({
     distinctId: data.id,
     properties: {
@@ -54,7 +92,7 @@ const handleUserUpdated = (data: UserJSON) => {
   return new Response('User updated', { status: 201 });
 };
 
-const handleUserDeleted = (data: DeletedObjectJSON) => {
+const handleUserDeleted = async (data: DeletedObjectJSON) => {
   if (data.id) {
     analytics.identify({
       distinctId: data.id,
@@ -67,87 +105,60 @@ const handleUserDeleted = (data: DeletedObjectJSON) => {
       event: 'User Deleted',
       distinctId: data.id,
     });
+
+    await database.user.delete({
+      where: {
+        id: data.id,
+      },
+    });
   }
 
   return new Response('User deleted', { status: 201 });
 };
 
-const handleOrganizationCreated = (data: OrganizationJSON) => {
-  analytics.groupIdentify({
-    groupKey: data.id,
-    groupType: 'company',
-    distinctId: data.created_by,
-    properties: {
-      name: data.name,
-      avatar: data.image_url,
-    },
-  });
-
-  if (data.created_by) {
-    analytics.capture({
-      event: 'Organization Created',
-      distinctId: data.created_by,
-    });
+const getUserDataFromClerk = (data: UserJSON) => {
+  if (!data) {
+    throw new Error('No data');
   }
 
-  return new Response('Organization created', { status: 201 });
-};
-
-const handleOrganizationUpdated = (data: OrganizationJSON) => {
-  analytics.groupIdentify({
-    groupKey: data.id,
-    groupType: 'company',
-    distinctId: data.created_by,
-    properties: {
-      name: data.name,
-      avatar: data.image_url,
-    },
-  });
-
-  if (data.created_by) {
-    analytics.capture({
-      event: 'Organization Updated',
-      distinctId: data.created_by,
-    });
+  const id = data.id;
+  if (!id) {
+    throw new Error('No ID');
   }
 
-  return new Response('Organization updated', { status: 201 });
-};
+  const email = data.email_addresses.at(0)?.email_address;
+  if (!email) {
+    throw new Error('No email address');
+  }
 
-const handleOrganizationMembershipCreated = (
-  data: OrganizationMembershipJSON
-) => {
-  analytics.groupIdentify({
-    groupKey: data.organization.id,
-    groupType: 'company',
-    distinctId: data.public_user_data.user_id,
-  });
+  const createdAt = new Date(data.created_at);
+  if (!createdAt) {
+    throw new Error('No created at');
+  }
 
-  analytics.capture({
-    event: 'Organization Member Created',
-    distinctId: data.public_user_data.user_id,
-  });
+  const firstName = data.first_name ?? email.split('@')[0];
+  const lastName = data.last_name ?? '';
+  const avatarUrl = data.image_url;
+  const phoneNumber = data.phone_numbers.at(0)?.phone_number;
 
-  return new Response('Organization membership created', { status: 201 });
-};
-
-const handleOrganizationMembershipDeleted = (
-  data: OrganizationMembershipJSON
-) => {
-  // Need to unlink the user from the group
-
-  analytics.capture({
-    event: 'Organization Member Deleted',
-    distinctId: data.public_user_data.user_id,
-  });
-
-  return new Response('Organization membership deleted', { status: 201 });
+  return {
+    id: data.id,
+    email,
+    firstName,
+    lastName,
+    createdAt,
+    username: email,
+    avatarUrl,
+    phoneNumber,
+  };
 };
 
 export const POST = async (request: Request): Promise<Response> => {
   if (!env.CLERK_WEBHOOK_SECRET) {
     return NextResponse.json({ message: 'Not configured', ok: false });
   }
+
+  console.log(request);
 
   // Get the headers
   const headerPayload = await headers();
@@ -189,37 +200,23 @@ export const POST = async (request: Request): Promise<Response> => {
   const { id } = event.data;
   const eventType = event.type;
 
+  console.log(eventType);
+
   log.info('Webhook', { id, eventType, body });
 
   let response: Response = new Response('', { status: 201 });
 
   switch (eventType) {
     case 'user.created': {
-      response = handleUserCreated(event.data);
+      response = await handleUserCreated(event.data);
       break;
     }
     case 'user.updated': {
-      response = handleUserUpdated(event.data);
+      response = await handleUserUpdated(event.data);
       break;
     }
     case 'user.deleted': {
-      response = handleUserDeleted(event.data);
-      break;
-    }
-    case 'organization.created': {
-      response = handleOrganizationCreated(event.data);
-      break;
-    }
-    case 'organization.updated': {
-      response = handleOrganizationUpdated(event.data);
-      break;
-    }
-    case 'organizationMembership.created': {
-      response = handleOrganizationMembershipCreated(event.data);
-      break;
-    }
-    case 'organizationMembership.deleted': {
-      response = handleOrganizationMembershipDeleted(event.data);
+      response = await handleUserDeleted(event.data);
       break;
     }
     default: {

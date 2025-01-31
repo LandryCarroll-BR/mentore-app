@@ -1,4 +1,4 @@
-import { auth, currentUser } from '@repo/auth/server';
+import { currentUser } from '@repo/auth/server';
 import { authenticate } from '@repo/collaboration/auth';
 import { tailwind } from '@repo/tailwind-config';
 
@@ -24,7 +24,7 @@ const COLORS = [
 
 export const POST = async () => {
   const user = await currentUser();
-  const { orgId } = await auth();
+  const orgId = user?.publicMetadata.org_id as string;
 
   if (!user || !orgId) {
     return new Response('Unauthorized', { status: 401 });
