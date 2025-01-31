@@ -3,7 +3,8 @@ import { noseconeConfig, noseconeMiddleware } from '@repo/security/middleware';
 
 const securityHeaders = noseconeMiddleware(noseconeConfig);
 
-export default authMiddleware(() => securityHeaders());
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+export default authMiddleware(() => securityHeaders()) as any;
 
 export const config = {
   matcher: [

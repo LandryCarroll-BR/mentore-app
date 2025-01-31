@@ -1,8 +1,9 @@
 import { env } from '@repo/env';
 import { config, withAnalyzer, withSentry } from '@repo/next-config';
-import type { NextConfig } from 'next';
+// import type { NextConfig } from 'next';
 
-let nextConfig: NextConfig = { ...config };
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+let nextConfig: any = { ...config };
 
 if (env.VERCEL) {
   nextConfig = withSentry(nextConfig);
