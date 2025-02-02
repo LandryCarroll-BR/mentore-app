@@ -1,6 +1,6 @@
+import { AppSidebar } from '@/components/app-sidebar';
 import { OrganizationSwitcher } from '@/components/organization-switcher';
 import { PostHogIdentifier } from '@/components/posthog-identifier';
-import { GlobalSidebar } from '@/components/sidebar';
 import { createUserFromAuth } from '@/data/actions/users.create';
 import { getUserOrganizations } from '@/data/queries/organizations.get';
 import { getUserFromDb } from '@/data/queries/users.get';
@@ -9,6 +9,7 @@ import { SidebarProvider } from '@repo/design-system/components/ui/sidebar';
 import { env } from '@repo/env';
 import { showBetaFeature } from '@repo/feature-flags';
 import { secure } from '@repo/security';
+import { redirect } from 'next/navigation';
 import type { ReactNode } from 'react';
 
 type AppLayoutProperties = {
@@ -36,18 +37,22 @@ const AppLayout = async ({ children }: AppLayoutProperties) => {
 
   const organizations = await getUserOrganizations(user?.id);
 
+  if (!organizations.length) {
+    redirect('/onboarding/admin');
+  }
+
   return (
     <SidebarProvider>
-      <GlobalSidebar
+      <AppSidebar
         header={
           <OrganizationSwitcher
             activeOrganizationId={
               (user?.publicMetadata?.org_id as string) ?? ''
             }
-            organizations={organizations.map((org) => ({
+            organizations={organizations.map(({ org, role }) => ({
               id: org.id,
               name: org.name,
-              plan: 'Free',
+              plan: role.name,
             }))}
           />
         }
@@ -58,7 +63,7 @@ const AppLayout = async ({ children }: AppLayoutProperties) => {
           </div>
         )}
         {children}
-      </GlobalSidebar>
+      </AppSidebar>
       <PostHogIdentifier />
     </SidebarProvider>
   );

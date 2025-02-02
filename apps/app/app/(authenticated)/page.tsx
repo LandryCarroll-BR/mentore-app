@@ -1,15 +1,11 @@
 import { AvatarStack } from '@/components/avatar-stack';
 import { Cursors } from '@/components/cursors';
 import { Header } from '@/components/header';
-import {
-  getActiveOrganizationId,
-  getUserOrganizations,
-} from '@/data/queries/organizations.get';
-import { currentUser } from '@repo/auth/server';
+import { getActiveOrganizationId } from '@/data/queries/organizations.get';
+import {} from '@repo/design-system/components/ui/sidebar';
 import { env } from '@repo/env';
 import type { Metadata } from 'next';
 import dynamic from 'next/dynamic';
-import { redirect } from 'next/navigation';
 
 const title = 'Acme Inc';
 const description = 'My application.';
@@ -26,14 +22,7 @@ export const metadata: Metadata = {
 };
 
 const App = async () => {
-  const user = await currentUser();
-  const organizations = await getUserOrganizations(user?.id);
   const activeOrganizationId = await getActiveOrganizationId();
-
-  if (!organizations.length) {
-    redirect('/onboarding/create-organization');
-  }
-
   return (
     <>
       <Header page="Dashboard">

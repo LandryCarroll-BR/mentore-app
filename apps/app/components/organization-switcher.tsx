@@ -5,17 +5,14 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from '@repo/design-system/components/ui/dropdown-menu';
 import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  useSidebar,
 } from '@repo/design-system/components/ui/sidebar';
-import { Building2, ChevronsUpDown, Plus } from 'lucide-react';
+import { Building2, ChevronsUpDown } from 'lucide-react';
 import { useOptimistic, useTransition } from 'react';
 
 type Organization = {
@@ -31,8 +28,6 @@ export function OrganizationSwitcher({
   organizations: Organization[];
   activeOrganizationId: string;
 }) {
-  const { isMobile } = useSidebar();
-
   const [optimisticOrgId, setOptimisticOrgId] = useOptimistic<string, string>(
     activeOrganizationId,
     (_, newOrgId) => newOrgId
@@ -73,14 +68,14 @@ export function OrganizationSwitcher({
           </DropdownMenuTrigger>
           <DropdownMenuContent
             className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
-            align="start"
-            side={isMobile ? 'bottom' : 'right'}
+            align="center"
+            side={'bottom'}
             sideOffset={4}
           >
             <DropdownMenuLabel className="text-muted-foreground text-xs">
               Teams
             </DropdownMenuLabel>
-            {organizations.map((org, index) => (
+            {organizations.map((org) => (
               <DropdownMenuItem
                 key={org.id}
                 onClick={() => {
@@ -95,16 +90,8 @@ export function OrganizationSwitcher({
                   <Building2 className="size-4 shrink-0" />
                 </div>
                 {org.name}
-                <DropdownMenuShortcut>⌘{index + 1}</DropdownMenuShortcut>
               </DropdownMenuItem>
             ))}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="gap-2 p-2">
-              <div className="flex size-6 items-center justify-center rounded-md border bg-background">
-                <Plus className="size-4" />
-              </div>
-              <div className="font-medium text-muted-foreground">Add team</div>
-            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>
