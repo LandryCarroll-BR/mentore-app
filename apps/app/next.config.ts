@@ -1,9 +1,20 @@
 import { env } from '@repo/env';
 import { config, withAnalyzer, withSentry } from '@repo/next-config';
-// import type { NextConfig } from 'next';
-
+//
 // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-let nextConfig: any = { ...config };
+let nextConfig: any = {
+  // biome-ignore lint/suspicious/useAwait: <explanation>
+  async redirects() {
+    return [
+      {
+        source: '/',
+        destination: '/dashboard',
+        permanent: true,
+      },
+    ];
+  },
+  ...config,
+};
 
 if (env.VERCEL) {
   nextConfig = withSentry(nextConfig);

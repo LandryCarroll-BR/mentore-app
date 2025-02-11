@@ -1,6 +1,3 @@
-import { AppSidebar } from '@/components/app-sidebar';
-import { OrganizationSwitcher } from '@/components/organization-switcher';
-import { PostHogIdentifier } from '@/components/posthog-identifier';
 import { createUserFromAuth } from '@/data/actions/users.create';
 import { getUserOrganizations } from '@/data/queries/organizations.get';
 import { getUserFromDb } from '@/data/queries/users.get';
@@ -43,28 +40,12 @@ const AppLayout = async ({ children }: AppLayoutProperties) => {
 
   return (
     <SidebarProvider>
-      <AppSidebar
-        header={
-          <OrganizationSwitcher
-            activeOrganizationId={
-              (user?.publicMetadata?.org_id as string) ?? ''
-            }
-            organizations={organizations.map(({ org, role }) => ({
-              id: org.id,
-              name: org.name,
-              plan: role.name,
-            }))}
-          />
-        }
-      >
-        {betaFeature && (
-          <div className="m-4 rounded-full bg-success p-1.5 text-center text-sm text-success-foreground">
-            Beta feature now available
-          </div>
-        )}
-        {children}
-      </AppSidebar>
-      <PostHogIdentifier />
+      {betaFeature && (
+        <div className="m-4 rounded-full bg-success p-1.5 text-center text-sm text-success-foreground">
+          Beta feature now available
+        </div>
+      )}
+      {children}
     </SidebarProvider>
   );
 };

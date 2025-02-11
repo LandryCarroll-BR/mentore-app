@@ -10,36 +10,41 @@ datasource db {
 }
 
 model User {
-  id                   String             @id @default(cuid())
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   firstName            String
   lastName             String
   username             String             @unique
   email                String             @unique
-  createdAt            DateTime           @default(now())
-  updatedAt            DateTime           @updatedAt
   phoneNumber          String?
   avatarUrl            String?
   isSuperUser          Boolean            @default(false) // Identifies superusers
   activeOrganizationId String? // The ID of the active organization (optional)
   activeOrganization   Organization?      @relation(fields: [activeOrganizationId], references: [id])
   organizationUsers    OrganizationUser[] // Many-to-many relationship via OrganizationUser
+  FormSubmission       FormSubmission[]
 
   @@index([activeOrganizationId])
 }
 
 model Organization {
-  id                String              @id @default(cuid())
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   name              String
   organizationUsers OrganizationUser[] // Many-to-many relationship via OrganizationUser
+  forms             OrganizationForm[] // Many-to-many relationship with forms
   applications      MentorApplication[] // Mentor applications within the organization
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
 
   User User[]
 }
 
 model Role {
-  id                String             @id @default(cuid())
+  id String @id @default(cuid())
+
   name              String             @unique // Human-readable name of the role (e.g., 'Admin')
   key               String             @unique // Enum-like unique key for roles (e.g., 'ADMIN', 'MENTOR')
   isGlobal          Boolean            @default(false) // Indicates if the role is global
@@ -48,36 +53,39 @@ model Role {
 }
 
 model Permission {
-  id     String           @id @default(cuid())
+  id String @id @default(cuid())
+
   action String           @unique // e.g., 'read', 'write', 'delete', 'approveApplications'
   roles  RolePermission[] // Many-to-many relationship with roles
 }
 
 model RolePermission {
-  id           String @id @default(cuid())
-  roleId       String
-  permissionId String
+  id String @id @default(cuid())
 
-  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  roleId       String
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  permissionId String
 
   @@unique([roleId, permissionId]) // Ensures no duplicate role-permission combinations
   @@index([permissionId])
 }
 
 model OrganizationUser {
-  id             String       @id @default(cuid())
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId         String
   role           Role         @relation(fields: [roleId], references: [id], onDelete: Cascade)
   roleId         String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  organizationId String // Ties the role to a specific organization
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  Mentor         Mentor[]
-  Partner        Partner[]
-  Admin          Admin[]
+  organizationId String
+
+  Mentor  Mentor[]
+  Partner Partner[]
+  Admin   Admin[]
 
   @@unique([userId, roleId, organizationId]) // Ensures no duplicate roles for the same user in the same organization
   @@index([organizationId])
@@ -85,60 +93,69 @@ model OrganizationUser {
 }
 
 model Mentor {
-  id                 String              @id @default(cuid())
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   organizationUser   OrganizationUser    @relation(fields: [organizationUserId], references: [id])
   organizationUserId String              @unique
-  availability       String // Availability for mentoring sessions
   applications       MentorApplication[] // Relation to applications
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
 }
 
 model MentorApplication {
-  id             String            @id @default(cuid())
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   organization   Organization      @relation(fields: [organizationId], references: [id])
   organizationId String
   mentor         Mentor            @relation(fields: [mentorId], references: [id])
   mentorId       String
   referenceForms ReferenceForm[]
   status         ApplicationStatus @default(PENDING)
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
+  form           Form              @relation(fields: [formId], references: [id])
+  formId         String
 
   @@index([organizationId])
   @@index([mentorId])
+  @@index([formId])
 }
 
 model ReferenceForm {
-  id                  String             @id @default(cuid())
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  referenceName  String // Name of the reference
+  referenceEmail String // Email of the reference
+
   mentorApplication   MentorApplication? @relation(fields: [mentorApplicationId], references: [id])
   mentorApplicationId String?
-  referenceName       String // Name of the reference
-  referenceEmail      String // Email of the reference
-  relationship        String? // Relationship to the applicant (e.g., "Supervisor")
-  feedback            String // Feedback or endorsement text
-  createdAt           DateTime           @default(now())
-  updatedAt           DateTime           @updatedAt
+  form                Form               @relation(fields: [formId], references: [id])
+  formId              String
 
   @@index([mentorApplicationId])
+  @@index([formId])
 }
 
 model Partner {
-  id                 String           @id @default(cuid())
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  releaseDate        DateTime? // Optional field for released partners
   organizationUser   OrganizationUser @relation(fields: [organizationUserId], references: [id])
   organizationUserId String           @unique
   status             PartnerStatus    @default(RESIDENT) // Unique property for partners
-  releaseDate        DateTime? // Optional field for released partners
-  createdAt          DateTime         @default(now())
-  updatedAt          DateTime         @updatedAt
 }
 
 model Admin {
-  id                 String           @id @default(cuid())
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   organizationUser   OrganizationUser @relation(fields: [organizationUserId], references: [id])
   organizationUserId String           @unique
-  createdAt          DateTime         @default(now())
-  updatedAt          DateTime         @updatedAt
 }
 
 enum PartnerStatus {
@@ -150,4 +167,118 @@ enum ApplicationStatus {
   PENDING
   APPROVED
   REJECTED
+}
+
+model Form {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  name        String
+  description String?
+  isPublished Boolean @default(false)
+
+  organizationForm OrganizationForm[]
+  steps            FormStep[]
+  submissions      FormSubmission[]
+
+  MentorApplication MentorApplication[]
+
+  ReferenceForm ReferenceForm[]
+}
+
+model OrganizationForm {
+  id String @id @default(uuid())
+
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String
+  form           Form         @relation(fields: [formId], references: [id])
+  formId         String
+
+  @@index([organizationId])
+  @@index([formId])
+}
+
+model FormStep {
+  id String @id @default(uuid())
+
+  stepOrder   Int
+  title       String?
+  description String?
+  fields      FormField[]
+
+  form   Form   @relation(fields: [formId], references: [id])
+  formId String
+
+  @@index([formId])
+}
+
+model FormField {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  label      String
+  isRequired Boolean   @default(false)
+  formType   FieldType
+
+  step       FormStep          @relation(fields: [formStepId], references: [id])
+  formStepId String
+  options    FormFieldOption[]
+  responses  FormResponse[]
+
+  @@index([formStepId])
+}
+
+model FormFieldOption {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+
+  value String // The actual option value stored in the DB
+  label String // The display label for the option
+
+  field   FormField @relation(fields: [fieldId], references: [id])
+  fieldId String
+
+  @@index([fieldId])
+}
+
+model FormSubmission {
+  id String @id @default(uuid())
+
+  submittedAt DateTime @default(now())
+
+  form      Form           @relation(fields: [formId], references: [id])
+  formId    String
+  user      User?          @relation(fields: [userId], references: [id])
+  userId    String? // Nullable for anonymous submissions
+  responses FormResponse[]
+
+  @@index([userId])
+  @@index([formId])
+}
+
+model FormResponse {
+  id String @id @default(uuid())
+
+  value String // Stores user input, can be JSON for multi-select options
+
+  submission   FormSubmission @relation(fields: [submissionId], references: [id])
+  submissionId String
+  field        FormField      @relation(fields: [fieldId], references: [id])
+  fieldId      String
+
+  @@index([submissionId])
+  @@index([fieldId])
+}
+
+enum FieldType {
+  TEXT
+  TEXTAREA
+  SELECT
+  RADIO
+  CHECKBOX
+  DATE
+  NUMBER
+  FILE
 }

@@ -1,5 +1,3 @@
-import { createUserFromAuth } from '@/data/actions/users.create';
-import { getUserFromDb } from '@/data/queries/users.get';
 import { auth, currentUser } from '@repo/auth/server';
 import { SidebarProvider } from '@repo/design-system/components/ui/sidebar';
 import { env } from '@repo/env';
@@ -20,12 +18,6 @@ const AppLayout = async ({ children }: AppLayoutProperties) => {
 
   if (!user?.id) {
     return redirectToSignIn();
-  }
-
-  const userFromDb = await getUserFromDb(user?.id);
-
-  if (!userFromDb) {
-    await createUserFromAuth();
   }
 
   return <SidebarProvider>{children}</SidebarProvider>;

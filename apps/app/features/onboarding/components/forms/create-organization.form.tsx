@@ -24,7 +24,7 @@ import { useAction } from 'next-safe-action/hooks';
 import { useForm } from 'react-hook-form';
 
 export const CreateOrganizationForm: React.FC = () => {
-  const { executeAsync, isExecuting } = useAction(createOrganizationAction, {
+  const { executeAsync } = useAction(createOrganizationAction, {
     onSuccess: () => {
       toast.success('Organization created');
     },
@@ -59,7 +59,7 @@ export const CreateOrganizationForm: React.FC = () => {
           )}
         />
         <LoadingButton
-          disabled={form.formState.isSubmitting || isExecuting}
+          disabled={form.formState.isSubmitting}
           type="submit"
           className="mt-6"
         >

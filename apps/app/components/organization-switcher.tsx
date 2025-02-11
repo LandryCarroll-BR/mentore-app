@@ -18,7 +18,7 @@ import { useOptimistic, useTransition } from 'react';
 type Organization = {
   id: string;
   name: string;
-  plan: string;
+  role: string;
 };
 
 export function OrganizationSwitcher({
@@ -61,7 +61,7 @@ export function OrganizationSwitcher({
                 <span className="truncate font-semibold">
                   {activeTeam.name}
                 </span>
-                <span className="truncate text-xs">{activeTeam.plan}</span>
+                <span className="truncate text-xs">{activeTeam.role}</span>
               </div>
               <ChevronsUpDown className="ml-auto" />
             </SidebarMenuButton>

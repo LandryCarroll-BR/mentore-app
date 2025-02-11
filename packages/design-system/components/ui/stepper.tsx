@@ -190,6 +190,7 @@ const defineStepper = <Steps extends Stepperize.Step[]>(
               "data-[label-orientation=vertical]:w-full",
               "data-[label-orientation=vertical]:flex-col",
               "data-[label-orientation=vertical]:justify-center",
+              className
             ])}
             data-variant={variant}
             data-label-orientation={labelOrientation}

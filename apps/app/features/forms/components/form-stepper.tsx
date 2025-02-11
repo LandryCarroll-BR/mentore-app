@@ -1,19 +1,17 @@
+import { FormStep } from '@/features/forms/components/form-step';
+import type { FormStepSchema } from '@/features/forms/schemas/form-step.schema';
 import { Button } from '@repo/design-system/components/ui/button';
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
 } from '@repo/design-system/components/ui/card';
 import type { DefineStepperProps } from '@repo/design-system/components/ui/stepper';
 import * as React from 'react';
 
-type FormStepperStep = {
-  id: string;
-  title: string;
-  icon: React.ReactNode;
-  form: React.ReactNode;
-};
+type FormStepperStep = FormStepSchema;
 
 type FormStepperType = DefineStepperProps<FormStepperStep[]>;
 
@@ -52,12 +50,7 @@ function FormStepperNavigation() {
   return (
     <StepperNavigation>
       {methods.all.map((step) => (
-        <StepperStep
-          key={step.id}
-          of={step.id}
-          onClick={() => methods.goTo(step.id)}
-          icon={step.icon}
-        >
+        <StepperStep key={step.id} of={step.id} className="pointer-events-none">
           <StepperTitle>{step.title}</StepperTitle>
         </StepperStep>
       ))}
@@ -75,8 +68,11 @@ function FormStepperContent() {
           <Card>
             <CardHeader>
               <CardTitle>{step.title}</CardTitle>
+              <CardDescription>{step.description}</CardDescription>
             </CardHeader>
-            <CardContent>{step.form}</CardContent>
+            <CardContent>
+              <FormStep {...step} />
+            </CardContent>
           </Card>
         </StepperPanel>
       ))}
@@ -89,18 +85,16 @@ function FormStepperControls() {
   const methods = useStepper();
   return (
     <StepperControls className="mt-auto">
-      {!methods.isLast && (
-        <>
-          <Button
-            variant="secondary"
-            onClick={methods.prev}
-            disabled={methods.isFirst}
-          >
-            Previous
-          </Button>
-          <Button onClick={methods.next}>{'Next'}</Button>
-        </>
-      )}
+      <Button
+        variant="secondary"
+        onClick={methods.prev}
+        disabled={methods.isFirst}
+      >
+        Previous
+      </Button>
+      <Button onClick={methods.next} disabled={methods.isLast}>
+        {'Next'}
+      </Button>
     </StepperControls>
   );
 }
