@@ -28,7 +28,7 @@
     "@sentry/nextjs": "^8.43.0",
     "date-fns": "^4.1.0",
     "fuse.js": "^7.0.0",
-    "import-in-the-middle": "^1.11.3",
+    "import-in-the-middle": "^1.13.1",
     "lucide-react": "^0.468.0",
     "next": "15.1.6",
     "next-safe-action": "^7.10.2",
